@@ -14,7 +14,7 @@ exports.getAllAdmins = async () => {
 };
 
 exports.updateAdminProfile = async (adminId, updateData) => {
-    const admin = await Admin.findById(adminId);
+    const admin = await Admin.findById(adminId).select("-password").select("-verificationCode").select("-isVerified").select("-passwordResetCode");
     if (!admin) throw new ApiError("Admin not found", 404);
   
     if (typeof updateData.name !== "undefined") admin.name = updateData.name;
