@@ -10,7 +10,7 @@ exports.updateAdminProfile = asyncHandler(async (req, res) => {
     const updatePayload = {
       name: req.body?.name,
       phone: req.body?.phone,
-      profilePicture: req.file?.path,
+      profilePicture: req.file?.location ,
     };
   
     const updatedAdmin = await adminService.updateAdminProfile(

@@ -6,7 +6,7 @@ exports.createBanner = asyncHandler(async (req, res) => {
     if (!req.file) {
         throw new ApiError("Image file is required", 400);
     }
-    const banner = await bannerService.createBanner({ image: req.file.path }, req.admin);
+    const banner = await bannerService.createBanner({ image: req.file.location  }, req.admin);
     res.status(201).json({ success: true, message: "Banner created successfully", data: banner });
 });
 
@@ -26,7 +26,7 @@ exports.updateBanner = asyncHandler(async (req, res) => {
     }
     const banner = await bannerService.updateBanner(
         req.query.id,
-        { image: req.file.path },
+        { image: req.file.location  },
         req.admin
     );
     res.json({ success: true, message: "Banner updated successfully", data: banner });

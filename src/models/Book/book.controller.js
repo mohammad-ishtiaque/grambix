@@ -20,18 +20,18 @@ exports.createBook = asyncHandler(async (req, res) => {
   }
 
   // Log files for debugging
-  console.log('Uploaded files:', req.files);
+  // console.log('Uploaded files:', req.files);
   
   const data = {
     bookName,
     synopsis,
     category,
     categoryName,
-    bookCover: req.files?.bookCover?.[0]?.path || null,
+    bookCover: req.files?.bookCover?.[0]?.location  || null,
     tags: tagsArray,
-    pdfFile: req.files?.pdfFile?.[0]?.path || null,
+    pdfFile: req.files?.pdfFile?.[0]?.location  || null,
     totalPages: totalPages || null,
-    audioFile: req.files?.audioFile?.[0]?.path || null,
+    audioFile: req.files?.audioFile?.[0]?.location  || null,
     duration: duration || null,
   };
 
@@ -78,7 +78,7 @@ exports.updateBook = asyncHandler(async (req, res) => {
   }
 
   // Log files for debugging
-  console.log('Uploaded files for update:', req.files);
+  // console.log('Uploaded files for update:', req.files);
   
   // Prepare update data
   const updateData = { ...req.body };
@@ -92,13 +92,13 @@ exports.updateBook = asyncHandler(async (req, res) => {
   
   // Handle file uploads
   if (req.files?.bookCover) {
-    updateData.bookCover = req.files.bookCover[0].path;
+    updateData.bookCover = req.files.bookCover[0].location ;
   }
   
   // Handle PDF file
   if (req.files?.pdfFile || totalPages !== undefined) {
     if (req.files?.pdfFile) {
-      updateData.pdfFile = req.files.pdfFile[0].path;
+      updateData.pdfFile = req.files.pdfFile[0].location ;
     }
     if (totalPages !== undefined) {
       updateData.totalPages = totalPages;
@@ -108,7 +108,7 @@ exports.updateBook = asyncHandler(async (req, res) => {
   // Handle audio file
   if (req.files?.audioFile || duration !== undefined) {
     if (req.files?.audioFile) {
-      updateData.audioFile = req.files.audioFile[0].path;
+      updateData.audioFile = req.files.audioFile[0].location ;
     }
     if (duration !== undefined) {
       updateData.duration = duration;

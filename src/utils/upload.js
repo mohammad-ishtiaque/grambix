@@ -1,31 +1,18 @@
 const multer = require("multer");
+const multerS3 = require("multer-s3");
 const path = require("path");
+const s3 = require("../config/s3"); // 👈 reuse your s3 config
 const { ApiError } = require("../errors/errorHandler");
+const dotenv = require("dotenv");
 
-// Storage engine with folders for images, pdfs, and audios
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, "uploads/images"); // For book covers
-    } else if (file.mimetype === "application/pdf") {
-      cb(null, "uploads/pdfs"); // For ebook PDFs
-    } else if (file.mimetype.startsWith("audio/")) {
-      cb(null, "uploads/audios"); // For audio files
-    } else {
-      cb(new ApiError("Invalid file type", 400), false);
-    }
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+dotenv.config();
 
-// Allowed mimetypes including audio
+// Allowed mimetypes
 const allowedImageTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
 const allowedAudioTypes = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/ogg"];
 const allowedPdfTypes = ["application/pdf"];
 
+// File filter
 const fileFilter = (req, file, cb) => {
   if (
     allowedImageTypes.includes(file.mimetype) ||
@@ -38,11 +25,66 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// File size limit, you can customize or use different limits per file type if needed
+// console.log(process.env.AWS_BUCKET_NAME)
+// Multer-S3 storage
+// const upload = multer({
+//   storage: multerS3({
+//     s3: s3,
+//     bucket: process.env.AWS_BUCKET_NAME,
+//     acl: "private", // 👈 use "private" if you want signed URLs, "public-read" for direct links
+//     key: (req, file, cb) => {
+//       let folder = "others";
+
+//       if (file.mimetype.startsWith("image/")) {
+//         folder = "images";
+//       } else if (file.mimetype === "application/pdf") {
+//         folder = "pdfs";
+//       } else if (file.mimetype.startsWith("audio/")) {
+//         folder = "audios";
+//       }
+
+//       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+//       cb(null, `${folder}/${uniqueSuffix}${path.extname(file.originalname)}`);
+//     },
+//   }),
+//   fileFilter,
+//   limits: { fileSize: 3 * 1024 * 1024 * 1024 }, // 3GB max
+// });
 const upload = multer({
-  storage,
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_BUCKET_NAME,
+    acl: "private", // keep private, better security
+    contentType: (req, file, cb) => {
+      // Let S3 detect content type automatically
+      cb(null, file.mimetype);
+    },
+    contentDisposition: (req, file, cb) => {
+      if (file.mimetype === "application/pdf" || file.mimetype.startsWith("image/") || file.mimetype.startsWith("audio/")) {
+        // Force browser to open PDFs inline
+        cb(null, "inline");
+      } else {
+        cb(null, "attachment"); // others can download
+      }
+    },
+    key: (req, file, cb) => {
+      let folder = "others";
+
+      if (file.mimetype.startsWith("image/")) {
+        folder = "images";
+      } else if (file.mimetype === "application/pdf") {
+        folder = "pdfs";
+      } else if (file.mimetype.startsWith("audio/")) {
+        folder = "audios";
+      }
+
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, `${folder}/${uniqueSuffix}${path.extname(file.originalname)}`);
+    },
+  }),
   fileFilter,
-  limits: { fileSize: 3 * 1024 * 1024 * 1024 }, // 3GB max (adjust as you want)
+  limits: { fileSize: 3 * 1024 * 1024 * 1024 }, // 3GB max
 });
+
 
 module.exports = upload;

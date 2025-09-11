@@ -7,7 +7,7 @@ exports.createBookCategory = asyncHandler(async (req, res) => {
     const bookCategory = await bookCategoryService.createBookCategory(
         {
             name,
-            image: req.file.path,
+            image: req.file?.location ,
         },
         req.admin
     );
@@ -31,7 +31,7 @@ exports.updateBookCategory = asyncHandler(async (req, res) => {
     
     // Only add image to update data if a file was uploaded
     if (req.file) {
-        updateData.image = req.file.path;
+        updateData.image = req.file?.location ;
     }
     
     const bookCategory = await bookCategoryService.updateBookCategory(

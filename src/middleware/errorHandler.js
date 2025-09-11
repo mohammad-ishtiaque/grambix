@@ -2,6 +2,8 @@
 const { ApiError } = require("../errors/errorHandler");
 const logger = require("../utils/logger");
 
+
+
 const errorMiddleware = (err, req, res, next) => {
   // If it's not an ApiError, wrap it
   if (!(err instanceof ApiError)) {

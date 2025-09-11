@@ -12,8 +12,8 @@ exports.createAudioBook = asyncHandler(async (req, res) => {
   const categoryName = category.name;
 
   // handle file uploads
-  const bookCoverPath = req.files?.bookCover?.[0]?.path || undefined;
-  const audioFilePath = req.files?.audioFile?.[0]?.path || undefined;
+  const bookCoverPath = req.files?.bookCover?.[0]?.location  || undefined;
+  const audioFilePath = req.files?.audioFile?.[0]?.location  || undefined;
 
   // handle tags (convert comma-separated string → array)
   let tagsArray = [];
@@ -58,8 +58,8 @@ exports.updateAudioBook = asyncHandler(async (req, res) => {
       req.params.id, 
       {
         ...req.body,
-        bookCover: req.files?.bookCover?.[0]?.path || undefined,
-        audioFile: req.files?.audioFile?.[0]?.path || undefined,
+        bookCover: req.files?.bookCover?.[0]?.location  || undefined,
+        audioFile: req.files?.audioFile?.[0]?.location  || undefined,
         tags: req.body.tags ? req.body.tags.split(",").map((tag) => tag.trim()) : [],
       }, 
       req.admin
