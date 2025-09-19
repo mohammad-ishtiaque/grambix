@@ -6,7 +6,7 @@ const {
   FAQ,
   ContactUs,
 } = require("./Manage");
-const ApiError = require("../../errors/errorHandler");
+const { ApiError } = require("../../errors/errorHandler");
 const validateFields = require("../../utils/validateFields");
 
 const addTermsConditions = async (payload) => {
@@ -37,7 +37,7 @@ const deleteTermsConditions = async (query) => {
   const result = await TermsConditions.deleteOne({ _id: id });
 
   if (!result.deletedCount)
-    throw new ApiError(status.NOT_FOUND, "TermsConditions not found");
+    throw new ApiError("TermsConditions not found", status.NOT_FOUND);
 
   return result;
 };
@@ -60,6 +60,23 @@ const addPrivacyPolicy = async (payload) => {
   }
 };
 
+
+const createPrivacyPolicy = async (payload) => {
+  // Accept either a raw string, payload.description, or tolerate common typo payload.desciption
+  const description =
+    typeof payload === "string"
+      ? payload
+      : payload?.description ?? payload?.desciption;
+
+  if (!description || typeof description !== "string") {
+    throw new ApiError(status.BAD_REQUEST, "'description' (string) is required");
+  }
+
+  const created = await PrivacyPolicy.create({ description });
+  return created.description;
+};
+
+
 const getPrivacyPolicy = async () => {
   return await PrivacyPolicy.findOne();
 };
@@ -70,7 +87,7 @@ const deletePrivacyPolicy = async (query) => {
   const result = await PrivacyPolicy.deleteOne({ _id: id });
 
   if (!result.deletedCount) {
-    throw new ApiError(status.NOT_FOUND, "Privacy Policy not found");
+    throw new ApiError("Privacy Policy not found", status.NOT_FOUND);
   }
 
   return result;
@@ -104,7 +121,7 @@ const deleteAboutUs = async (query) => {
   const result = await AboutUs.deleteOne({ _id: id });
 
   if (!result.deletedCount)
-    throw new ApiError(status.NOT_FOUND, "About Us not found");
+    throw new ApiError("About Us not found", status.NOT_FOUND);
 
   return result;
 };
@@ -127,7 +144,7 @@ const updateFaq = async (req) => {
     { new: true, runValidators: true }
   );
 
-  if (!result) throw new ApiError(status.NOT_FOUND, "FAQ not found");
+  if (!result) throw new ApiError("FAQ not found", status.NOT_FOUND);
 
   return result;
 };
@@ -143,7 +160,7 @@ const deleteFaq = async (query) => {
   const result = await FAQ.deleteOne({ _id: faqId });
 
   if (!result.deletedCount)
-    throw new ApiError(status.NOT_FOUND, "FAQ not found");
+    throw new ApiError("FAQ not found", status.NOT_FOUND);
 
   return result;
 };
@@ -224,6 +241,7 @@ const ManageService = {
   addContactUs,
   getContactUs,
   deleteContactUs,
+  createPrivacyPolicy,
 };
 
 module.exports = ManageService;

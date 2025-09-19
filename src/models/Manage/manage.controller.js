@@ -2,6 +2,13 @@ const asyncHandler = require("../../utils/asyncHandler");
 const sendResponse = require("../../utils/sendResponse");
 const ManageService = require("./manage.service");
 
+
+const createPrivacyPolicy = asyncHandler(async (req, res) => {
+  const result = await ManageService.createPrivacyPolicy(req.body);
+  // Return only the description string as the response body
+  res.status(200).send(result);
+});
+
 const addTermsConditions = asyncHandler(async (req, res) => {
   const result = await ManageService.addTermsConditions(req.body);
   sendResponse(res, {
@@ -179,6 +186,7 @@ const ManageController = {
   addContactUs,
   getContactUs,
   deleteContactUs,
+  createPrivacyPolicy,
 };
 
 module.exports = ManageController;

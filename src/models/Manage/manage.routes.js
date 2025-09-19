@@ -61,6 +61,11 @@ router
         "/delete-contact-us",
         authAdminOrSuperAdmin,
         ManageController.deleteContactUs
+    )
+    .post(
+        "/create-privacy-policy",
+        authAdminOrSuperAdmin,
+        ManageController.createPrivacyPolicy
     );
 
 module.exports = router;

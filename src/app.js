@@ -63,14 +63,15 @@ app.use("/", express.static(path.join(__dirname, '..')));
 //   });
 // });
 
-const allowedOrigins = [         // your main frontend from .env
+const allowedOrigins = [      
+  "*",   // your main frontend from .env
   "http://10.10.20.54:3500",
   "http://localhost:3500",
-   "https://olavenniels.vercel.app",       // fallback localhost
+  "https://olavenniels.vercel.app",       // fallback localhost
 ];
 
 
-// Security Middlewares
+// Security Middlewares 
 app.use(helmet());  
 app.use(cors({
   origin: function (origin, callback) {
