@@ -59,6 +59,12 @@ const getPrivacyPolicy = asyncHandler(async (req, res) => {
   });
 });
 
+const getPrivacyPolicy1 = asyncHandler(async (req, res) => {
+  const result = await ManageService.getPrivacyPolicy();
+  console.log(result)
+  res.status(200).send(result.description);
+});
+
 const deletePrivacyPolicy = asyncHandler(async (req, res) => {
   const result = await ManageService.deletePrivacyPolicy(req.query);
   sendResponse(res, {
@@ -187,6 +193,7 @@ const ManageController = {
   getContactUs,
   deleteContactUs,
   createPrivacyPolicy,
+  getPrivacyPolicy1
 };
 
 module.exports = ManageController;

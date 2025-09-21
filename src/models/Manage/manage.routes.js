@@ -66,6 +66,7 @@ router
         "/create-privacy-policy",
         authAdminOrSuperAdmin,
         ManageController.createPrivacyPolicy
-    );
+    )
+    .get("/get-privacy-policy1", ManageController.getPrivacyPolicy1);
 
 module.exports = router;
