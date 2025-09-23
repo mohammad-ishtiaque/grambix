@@ -70,10 +70,12 @@ exports.allSavedItems = async (userId) => {
   return user.savedItems;
 };
 
-
 exports.deleteUserAccount = async (userId) => {
   const user = await User.findByIdAndDelete(userId);
   if (!user) throw new ApiError("User not found", 404);
-  return true;
+  
+  // Here you can add any cleanup logic needed when a user deletes their account
+  // For example, removing user's data from other collections
+  
+  return { success: true, message: "Account deleted successfully" };
 };
-

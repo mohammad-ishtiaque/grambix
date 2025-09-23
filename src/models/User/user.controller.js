@@ -79,6 +79,8 @@ exports.allSavedItems = asyncHandler(async (req, res) => {
 });
 
 exports.deleteUserAccount = asyncHandler(async (req, res) => {
-  const user = await userService.deleteUserAccount(req.user._id || req.user.id);
-  res.json({ success: true, message: "User account deleted successfully" });
+  const result = await userService.deleteUserAccount(req.user._id || req.user.id);
+  // Clear the authentication cookie or token if using JWT in cookies
+  res.clearCookie('token'); // Adjust cookie name if different
+  res.json(result);
 });
