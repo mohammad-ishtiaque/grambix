@@ -69,3 +69,11 @@ exports.allSavedItems = async (userId) => {
   if (!user) throw new ApiError("User not found", 404);
   return user.savedItems;
 };
+
+
+exports.deleteUserAccount = async (userId) => {
+  const user = await User.findByIdAndDelete(userId);
+  if (!user) throw new ApiError("User not found", 404);
+  return true;
+};
+

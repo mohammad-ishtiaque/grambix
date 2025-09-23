@@ -77,3 +77,8 @@ exports.allSavedItems = asyncHandler(async (req, res) => {
   const books = await userService.allSavedItems(req.user._id || req.user.id);
   res.json({ success: true, books });
 });
+
+exports.deleteUserAccount = asyncHandler(async (req, res) => {
+  const user = await userService.deleteUserAccount(req.user._id || req.user.id);
+  res.json({ success: true, message: "User account deleted successfully" });
+});
