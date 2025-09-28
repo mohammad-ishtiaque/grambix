@@ -79,3 +79,26 @@ exports.deleteUserAccount = async (userId) => {
   
   return { success: true, message: "Account deleted successfully" };
 };
+
+exports.clearUserInformation = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError("User not found", 404);
+
+  // Reset all fields except email and password
+  user.firstName = "User";
+  user.lastName = "";
+  user.profilePicture = null;
+  user.bio = null;
+  user.phone = null;
+  user.savedItems = [];
+  user.verificationCode = { code: null, expiresAt: null };
+  user.passwordResetCode = { code: null, expiresAt: null };
+  user.isVerified = false;
+  user.isBlocked = false;
+
+  await user.save();
+  
+  // Return the updated user without sensitive data
+  const { password, ...userWithoutPassword } = user.toObject();
+  return userWithoutPassword;
+};

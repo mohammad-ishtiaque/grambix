@@ -78,6 +78,15 @@ exports.allSavedItems = asyncHandler(async (req, res) => {
   res.json({ success: true, books });
 });
 
+exports.clearUserInformation = asyncHandler(async (req, res) => {
+  const user = await userService.clearUserInformation(req.user._id || req.user.id);
+  res.json({ 
+    success: true, 
+    message: "User information cleared successfully",
+    data: user
+  });
+});
+
 exports.deleteUserAccount = asyncHandler(async (req, res) => {
   const result = await userService.deleteUserAccount(req.user._id || req.user.id);
   // Clear the authentication cookie or token if using JWT in cookies

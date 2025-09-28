@@ -9,6 +9,7 @@ router.put("/profile/update", authUser, upload.single("profilePicture"), userCon
 router.post("/profile/change-password", authUser, userController.changeUserPassword);
 router.post("/save-unsave-book", authUser, userController.toggleSaveBook);
 router.get("/saved-items", authUser, userController.allSavedItems);
+router.post("/clear-information", authUser, userController.clearUserInformation);
 router.delete("/delete-account", authUser, userController.deleteUserAccount);
 
 module.exports = router;
