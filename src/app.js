@@ -98,6 +98,10 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
+app.get("/", (req, res) => {
+  res.send("Grambix Backend");
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
