@@ -68,7 +68,8 @@ const allowedOrigins = [
   "http://10.10.20.54:3500",
   "http://localhost:3500",
   "https://olavenniels.vercel.app",
-  "http://13.62.91.46:3001"       // fallback localhost
+  "http://13.62.91.46:3001", 
+  "https://app.grambix.com"      // fallback localhost
 ];
 
 
