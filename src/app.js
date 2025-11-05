@@ -70,7 +70,8 @@ const allowedOrigins = [
   "https://olavenniels.vercel.app",
   "http://13.62.91.46:3001", 
   "https://app.grambix.com",
-  "http://13.62.165.184:3001"      // fallback localhost
+  "http://13.62.165.184:3001" ,
+  "https://dashboard.grambix.com"     // fallback localhost
 ];
 
 
