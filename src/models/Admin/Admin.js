@@ -31,6 +31,10 @@ const adminSchema = new mongoose.Schema({
     isVerified: {
         type: Boolean,
         default: true,
+    },
+    passwordResetCode: {
+        type: Number,
+        default: null,
     }
 } , {
     timestamps: true

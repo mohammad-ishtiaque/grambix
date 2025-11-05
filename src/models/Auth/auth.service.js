@@ -128,15 +128,28 @@ class AuthService {
    * Forgot Password: Send reset code
    */
   async forgotPassword(email) {
+    // Try regular user first
     const user = await User.findOne({ email });
-    if (!user) throw new ApiError("User not found", 404);
+    if (user) {
+      const resetCode = tokenService.generateVerificationCode();
+      user.passwordResetCode = {
+        code: resetCode,
+        expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
+      };
+      await user.save();
+
+      await emailService.sendPasswordResetCode(email, resetCode);
+      return { message: "Password reset code sent to email." };
+    }
+
+    // If not a user, try admin
+    const admin = await Admin.findOne({ email });
+    if (!admin) throw new ApiError("User not found", 404);
 
     const resetCode = tokenService.generateVerificationCode();
-    user.passwordResetCode = {
-      code: resetCode,
-      expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
-    };
-    await user.save();
+    // Admin schema currently stores a simple Number for passwordResetCode
+    admin.passwordResetCode = resetCode;
+    await admin.save();
 
     await emailService.sendPasswordResetCode(email, resetCode);
     return { message: "Password reset code sent to email." };
@@ -146,20 +159,35 @@ class AuthService {
    * Reset Password with code
    */
   async resetPassword(email, code, newPassword) {
+    // Try resetting for regular user first
     const user = await User.findOne({ email });
-    if (!user) throw new ApiError("User not found", 404);
+    if (user) {
+      if (
+        !user.passwordResetCode ||
+        user.passwordResetCode.code !== code ||
+        Date.now() > user.passwordResetCode.expiresAt
+      ) {
+        throw new ApiError("Invalid or expired reset code.", 400);
+      }
 
-    if (
-      !user.passwordResetCode ||
-      user.passwordResetCode.code !== code ||
-      Date.now() > user.passwordResetCode.expiresAt
-    ) {
+      user.password = await bcrypt.hash(newPassword, 10);
+      user.passwordResetCode = { code: null, expiresAt: null };
+      await user.save();
+
+      return { message: "Password reset successfully. You can now log in." };
+    }
+
+    // If not a user, try admin
+    const admin = await Admin.findOne({ email });
+    if (!admin) throw new ApiError("User not found", 404);
+
+    if (!admin.passwordResetCode || Number(admin.passwordResetCode) !== Number(code)) {
       throw new ApiError("Invalid or expired reset code.", 400);
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
-    user.passwordResetCode = { code: null, expiresAt: null };
-    await user.save();
+    admin.password = await bcrypt.hash(newPassword, 10);
+    admin.passwordResetCode = null;
+    await admin.save();
 
     return { message: "Password reset successfully. You can now log in." };
   }
