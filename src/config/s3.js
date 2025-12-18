@@ -12,4 +12,6 @@ const s3 = new S3Client({
   },
 });
 
+console.log("S3 Configured", process.env.AWS_REGION);
+
 module.exports = s3;

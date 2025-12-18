@@ -71,7 +71,8 @@ const allowedOrigins = [
   "http://13.62.91.46:3001", 
   "https://app.grambix.com",
   "http://13.62.165.184:3001" ,
-  "https://dashboard.grambix.com"     // fallback localhost
+  "https://dashboard.grambix.com" ,
+  "http://localhost:3001"    // fallback localhost
 ];
 
 
