@@ -127,33 +127,37 @@ class AuthService {
   /**
    * Forgot Password: Send reset code
    */
-  async forgotPassword(email) {
-    // Try regular user first
-    const user = await User.findOne({ email });
-    if (user) {
-      const resetCode = tokenService.generateVerificationCode();
-      user.passwordResetCode = {
-        code: resetCode,
-        expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
-      };
-      await user.save();
+async forgotPassword(email) {
+  email = email.toLowerCase().trim();
 
-      await emailService.sendPasswordResetCode(email, resetCode);
-      return { message: "Password reset code sent to email." };
-    }
-
-    // If not a user, try admin
-    const admin = await Admin.findOne({ email });
-    if (!admin) throw new ApiError("User not found", 404);
-
+  const user = await User.findOne({ email });
+  console.log(user);
+  if (user) {
     const resetCode = tokenService.generateVerificationCode();
-    // Admin schema currently stores a simple Number for passwordResetCode
-    admin.passwordResetCode = resetCode;
-    await admin.save();
-
+    user.passwordResetCode = {
+      code: resetCode,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    };
+    await user.save();
     await emailService.sendPasswordResetCode(email, resetCode);
     return { message: "Password reset code sent to email." };
   }
+
+  const admin = await Admin.findOne({ email });
+
+  console.log(admin);
+  if (!admin) {
+    throw new ApiError("No user or admin found with this email", 404);
+  }
+
+  const resetCode = tokenService.generateVerificationCode();
+  admin.passwordResetCode = resetCode;
+  await admin.save();
+  await emailService.sendPasswordResetCode(email, resetCode);
+
+  return { message: "Password reset code sent to email." };
+}
+
 
   /**
    * Reset Password with code
@@ -186,6 +190,7 @@ class AuthService {
     }
 
     admin.password = await bcrypt.hash(newPassword, 10);
+    console.log("Resetting admin password" + admin.password);
     admin.passwordResetCode = null;
     await admin.save();
 
