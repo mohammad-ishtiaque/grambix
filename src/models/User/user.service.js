@@ -51,22 +51,59 @@ exports.toggleSaveBook = async (userId, bookId, contentType) => {
     item => item.contentId.toString() === bookId && item.contentType === contentType
   );
 
+  let updatedUser;
+  
   if (existingIndex !== -1) {
-    // already saved → remove it
-    user.savedItems.splice(existingIndex, 1);
+    // already saved → remove it using $pull
+    console.log("Removing item from savedItems");
+    updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { 
+        $pull: { 
+          savedItems: { 
+            contentId: bookId, 
+            contentType: contentType 
+          } 
+        } 
+      },
+      { new: true, select: "-password -verificationCode -isVerified -passwordResetCode" }
+    );
   } else {
-    // not saved → add it
-    user.savedItems.push({ contentId: bookId, contentType });
+    // not saved → add it using $push
+    console.log("Adding item to savedItems");
+    updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { 
+        $push: { 
+          savedItems: { 
+            contentId: bookId, 
+            contentType: contentType 
+          } 
+        } 
+      },
+      { new: true, select: "-password -verificationCode -isVerified -passwordResetCode" }
+    );
   }
 
-  await user.save();
-  return user;
+  console.log("Updated savedItems:", updatedUser.savedItems);
+  
+  // Verify by fetching fresh from DB
+  const verification = await User.findById(userId).select("savedItems");
+  console.log("Verification from DB:", verification.savedItems);
+  
+  return updatedUser;
 };
 
 
 exports.allSavedItems = async (userId) => {
   const user = await User.findById(userId).select("-password").select("-verificationCode").select("-isVerified").select("-passwordResetCode");
   if (!user) throw new ApiError("User not found", 404);
+  
+  console.log("User ID:", userId);
+  console.log("Full user object keys:", Object.keys(user.toObject()));
+  console.log("Saved items length:", user.savedItems?.length);
+  console.log("Saved items:", JSON.stringify(user.savedItems, null, 2));
+  
   return user.savedItems;
 };
 
