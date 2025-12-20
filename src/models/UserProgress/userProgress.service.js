@@ -5,6 +5,7 @@ const { ApiError } = require('../../errors/errorHandler');
 const AudioBook = require('../AudioBook/AudioBook');
 const Book = require('../Book/Book');
 const Ebook = require('../Ebook/Ebook');
+const mongoose = require('mongoose');
 
 const mapContentTypeToModel = (type) => {
   switch (type) {
@@ -71,8 +72,18 @@ class UserProgressService {
     if (isCompleted !== undefined) userProgress.isCompleted = isCompleted;
     if (bookmarked !== undefined) userProgress.bookmarked = bookmarked;
 
-    // Update timestamps based on content type
-    if (contentType === 'ebook' || contentType === 'book') {
+    // Update timestamps based on which fields were updated
+    // For 'book' type, we can track BOTH reading and listening separately
+    if (contentType === 'book') {
+      // Update reading timestamp if page-related fields were updated
+      if (currentPage !== undefined || totalPages !== undefined) {
+        userProgress.lastReadAt = new Date();
+      }
+      // Update listening timestamp if time-related fields were updated
+      if (currentTime !== undefined || totalDuration !== undefined) {
+        userProgress.lastListenAt = new Date();
+      }
+    } else if (contentType === 'ebook') {
       userProgress.lastReadAt = new Date();
     } else if (contentType === 'audiobook') {
       userProgress.lastListenAt = new Date();
@@ -115,6 +126,9 @@ class UserProgressService {
 
   // Get user's reading/listening history
   static getHistory = async (userId, contentType, page = 1, limit = 20) => {
+    // Ensure page is at least 1
+    page = Math.max(1, parseInt(page) || 1);
+    limit = Math.max(1, parseInt(limit) || 20);
     const skip = (page - 1) * limit;
     
     const history = await UserProgress.find({
@@ -146,6 +160,9 @@ class UserProgressService {
 
   // Get user's bookmarked items
   static getBookmarks = async (userId, page = 1, limit = 20) => {
+    // Ensure page is at least 1
+    page = Math.max(1, parseInt(page) || 1);
+    limit = Math.max(1, parseInt(limit) || 20);
     const skip = (page - 1) * limit;
     
     const bookmarks = await UserProgress.find({
@@ -207,7 +224,7 @@ class UserProgressService {
     await userActivity.save();
   };
 
-  // Get user's weekly/monthly activity
+  // Get user's weekly/monthly activity (calculated from UserProgress)
   static getActivityStats = async (userId, period = 'week') => {
     const now = new Date();
     let startDate;
@@ -218,45 +235,104 @@ class UserProgressService {
     } else if (period === 'month') {
       startDate = new Date(now);
       startDate.setMonth(now.getMonth() - 1);
+    } else {
+      // Default to week if invalid period
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
     }
 
-    const activities = await UserActivity.find({
-      userId,
-      date: { $gte: startDate, $lte: now }
-    }).sort({ date: 1 });
+    // Aggregate reading activity from UserProgress
+    const readingStats = await UserProgress.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId),
+          contentType: { $in: ['ebook', 'book'] },
+          lastReadAt: { $gte: startDate, $lte: now }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$lastReadAt' }
+          },
+          ebooksRead: { $sum: 1 },
+          totalPages: { $sum: { $ifNull: ['$currentPage', 0] } }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Aggregate listening activity from UserProgress
+    const listeningStats = await UserProgress.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId),
+          contentType: { $in: ['audiobook', 'book'] },
+          lastListenAt: { $gte: startDate, $lte: now }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$lastListenAt' }
+          },
+          audiobooksListened: { $sum: 1 },
+          totalTime: { $sum: { $ifNull: ['$currentTime', 0] } }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
 
     // Calculate totals
-    const totals = activities.reduce((acc, activity) => {
-      acc.readingMinutes += activity.readingMinutes;
-      acc.listeningMinutes += activity.listeningMinutes;
-      acc.pagesRead += activity.pagesRead;
-      acc.timeListened += activity.timeListened;
-      acc.ebooksRead += activity.ebooksRead;
-      acc.audiobooksListened += activity.audiobooksListened;
-      return acc;
-    }, {
-      readingMinutes: 0,
-      listeningMinutes: 0,
-      pagesRead: 0,
-      timeListened: 0,
-      ebooksRead: 0,
-      audiobooksListened: 0
+    const totals = {
+      ebooksRead: readingStats.reduce((sum, stat) => sum + stat.ebooksRead, 0),
+      pagesRead: readingStats.reduce((sum, stat) => sum + stat.totalPages, 0),
+      audiobooksListened: listeningStats.reduce((sum, stat) => sum + stat.audiobooksListened, 0),
+      timeListened: listeningStats.reduce((sum, stat) => sum + stat.totalTime, 0),
+      // Estimate minutes (very rough - you may want to track this differently)
+      readingMinutes: readingStats.reduce((sum, stat) => sum + stat.totalPages, 0) * 2, // ~2 min per page
+      listeningMinutes: Math.round(listeningStats.reduce((sum, stat) => sum + stat.totalTime, 0) / 60)
+    };
+
+    // Merge daily data for charts
+    const dailyMap = new Map();
+    
+    readingStats.forEach(stat => {
+      dailyMap.set(stat._id, {
+        date: stat._id,
+        ebooks: stat.ebooksRead,
+        pagesRead: stat.totalPages,
+        reading: stat.totalPages * 2, // Estimated minutes
+        audiobooks: 0,
+        listening: 0,
+        timeListened: 0
+      });
     });
 
-    // Calculate daily breakdown for charts
-    const dailyBreakdown = activities.map(activity => ({
-      date: activity.date,
-      reading: activity.readingMinutes,
-      listening: activity.listeningMinutes,
-      ebooks: activity.ebooksRead,
-      audiobooks: activity.audiobooksListened
-    }));
+    listeningStats.forEach(stat => {
+      const existing = dailyMap.get(stat._id) || {
+        date: stat._id,
+        ebooks: 0,
+        pagesRead: 0,
+        reading: 0,
+        audiobooks: 0,
+        listening: 0,
+        timeListened: 0
+      };
+      existing.audiobooks = stat.audiobooksListened;
+      existing.timeListened = stat.totalTime;
+      existing.listening = Math.round(stat.totalTime / 60);
+      dailyMap.set(stat._id, existing);
+    });
+
+    const dailyBreakdown = Array.from(dailyMap.values()).sort((a, b) => 
+      a.date.localeCompare(b.date)
+    );
 
     return {
       period,
       totals,
-      dailyBreakdown,
-      activities
+      dailyBreakdown
     };
   };
 
