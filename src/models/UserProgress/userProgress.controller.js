@@ -16,7 +16,7 @@ class UserProgressController {
       progressData
     );
 
-    console.log(result)
+    // console.log(result)
 
     sendResponse(res, {
       statusCode: 200,
@@ -63,7 +63,7 @@ class UserProgressController {
   // Get user's bookmarked items
   static getBookmarks = async (req, res) => {
     const { id: userId } = req.user;
-    console.log(userId)
+    // console.log(userId)
     const { page = 1, limit = 20 } = req.query;
 
     const result = await UserProgressService.getBookmarks(

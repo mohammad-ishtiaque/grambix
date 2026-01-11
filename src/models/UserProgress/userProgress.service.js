@@ -72,21 +72,65 @@ class UserProgressService {
     if (isCompleted !== undefined) userProgress.isCompleted = isCompleted;
     if (bookmarked !== undefined) userProgress.bookmarked = bookmarked;
 
+    // Backfill totals from source content if missing (as requested by user)
+    if ((userProgress.totalPages === 0 && ['book', 'ebook'].includes(contentType)) ||
+        (userProgress.totalDuration === 0 && ['book', 'audiobook'].includes(contentType))) {
+        
+        let contentItem = null;
+        if (contentType === 'book') contentItem = await Book.findById(contentId);
+        else if (contentType === 'ebook') contentItem = await Ebook.findById(contentId);
+        else if (contentType === 'audiobook') contentItem = await AudioBook.findById(contentId);
+
+        if (contentItem) {
+            // For Books and Ebooks, set totalPages
+            if (contentItem.totalPages && ['book', 'ebook'].includes(contentType)) {
+                 userProgress.totalPages = contentItem.totalPages;
+            }
+            // For Books and AudioBooks, set totalDuration (assuming seconds)
+            if (contentItem.duration && ['book', 'audiobook'].includes(contentType)) {
+                 userProgress.totalDuration = contentItem.duration;
+            }
+        }
+    }
+
+    // Update timestamps based on which fields were updated
     // Update timestamps based on which fields were updated
     // For 'book' type, we can track BOTH reading and listening separately
     if (contentType === 'book') {
       // Update reading timestamp if page-related fields were updated
       if (currentPage !== undefined || totalPages !== undefined) {
         userProgress.lastReadAt = new Date();
+        // Calculate reading progress percentage if possible
+        if (progressData.progress !== undefined) {
+           userProgress.readingProgress = progressData.progress;
+        } else if (userProgress.totalPages > 0) {
+           userProgress.readingProgress = Math.min(100, Math.round((userProgress.currentPage / userProgress.totalPages) * 100));
+        }
       }
       // Update listening timestamp if time-related fields were updated
       if (currentTime !== undefined || totalDuration !== undefined) {
         userProgress.lastListenAt = new Date();
+        // Calculate listening progress percentage if possible
+        if (progressData.progress !== undefined) {
+           userProgress.listeningProgress = progressData.progress;
+        } else if (userProgress.totalDuration > 0) {
+           userProgress.listeningProgress = Math.min(100, Math.round((userProgress.currentTime / userProgress.totalDuration) * 100));
+        }
       }
     } else if (contentType === 'ebook') {
       userProgress.lastReadAt = new Date();
+      if (progress !== undefined) {
+        userProgress.readingProgress = progress;
+      } else if (userProgress.totalPages > 0 && userProgress.currentPage > 0) {
+        userProgress.readingProgress = Math.min(100, Math.round((userProgress.currentPage / userProgress.totalPages) * 100));
+      }
     } else if (contentType === 'audiobook') {
       userProgress.lastListenAt = new Date();
+      if (progress !== undefined) {
+        userProgress.listeningProgress = progress;
+      } else if (userProgress.totalDuration > 0 && userProgress.currentTime > 0) {
+        userProgress.listeningProgress = Math.min(100, Math.round((userProgress.currentTime / userProgress.totalDuration) * 100));
+      }
     }
 
     await userProgress.save();
@@ -101,21 +145,21 @@ class UserProgressService {
   static getContinueItems = async (userId, limit = 10) => {
     const continueReading = await UserProgress.find({
       userId,
-      contentType: 'ebook' || 'book',
+      contentType: { $in: ['ebook', 'book'] },
       isCompleted: false
     })
     .sort({ lastReadAt: -1 })
     .limit(limit)
-    .populate('contentId', 'bookCover bookName categoryName synopsis');
+    .populate('contentId', 'bookCover bookName categoryName synopsis isBook isEbook isAudioBook');
 
     const continueListening = await UserProgress.find({
       userId,
-      contentType: 'audiobook' || 'book',
+      contentType: { $in: ['audiobook', 'book'] },
       isCompleted: false
     })
     .sort({ lastListenAt: -1 })
     .limit(limit)
-    .populate('contentId', 'bookCover bookName categoryName synopsis');
+    .populate('contentId', 'bookCover bookName categoryName synopsis isBook isEbook isAudioBook');
     
 
     return {

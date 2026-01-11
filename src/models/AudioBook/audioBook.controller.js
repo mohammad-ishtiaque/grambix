@@ -4,7 +4,7 @@ const BookCategory = require('../BookCategory/BookCategory');
 const { ApiError } = require('../../errors/errorHandler');
 
 exports.createAudioBook = asyncHandler(async (req, res) => {
-  const { bookName, synopsis, tags } = req.body;
+  const { bookName, synopsis, tags, duration } = req.body;
 
   // validate category
   const category = await BookCategory.findById(req.body.category);
@@ -31,6 +31,7 @@ exports.createAudioBook = asyncHandler(async (req, res) => {
     category: category._id,
     categoryName,
     tags: tagsArray,
+    duration: duration,
   };
 
   const audioBook = await audioBookService.createAudioBook(data, req.admin);
