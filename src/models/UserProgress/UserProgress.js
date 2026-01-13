@@ -29,6 +29,18 @@ const userProgressSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
+  readingProgress: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
+  listeningProgress: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
   currentPage: {
     type: Number,
     default: 1

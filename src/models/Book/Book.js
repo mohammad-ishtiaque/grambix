@@ -52,9 +52,11 @@ const bookSchema = new mongoose.Schema(
 
 
         // AudioBook version
-
         audioFile: { type: String },
-        duration: { type: Number }, // seconds/minutes
+        duration: { 
+            type: Number,
+            set: (v) => require('../../utils/timeUtils').parseDurationToSeconds(v) 
+        }, // seconds/minutes
 
 
         createdBy: {

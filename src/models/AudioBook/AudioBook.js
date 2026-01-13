@@ -45,6 +45,11 @@ const audioBookSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    duration: {
+        type: Number, // in seconds
+        required: true,
+        set: (v) => require('../../utils/timeUtils').parseDurationToSeconds(v)
+    },
 }, {
     timestamps: true
 });
