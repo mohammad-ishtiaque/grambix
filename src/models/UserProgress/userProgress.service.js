@@ -101,22 +101,24 @@ class UserProgressService {
   static getContinueItems = async (userId, limit = 10) => {
     const continueReading = await UserProgress.find({
       userId,
-      contentType: 'ebook' || 'book',
+      contentType: { $in: ['ebook', 'book'] },
       isCompleted: false
     })
-    .sort({ lastReadAt: -1 })
-    .limit(limit)
-    .populate('contentId', 'bookCover bookName categoryName synopsis');
+      .sort({ lastReadAt: -1 })
+      .limit(limit)
+      .populate('contentId', 'bookCover bookName categoryName synopsis isAudioBook isEbook isBook')
+      .lean();
 
     const continueListening = await UserProgress.find({
       userId,
-      contentType: 'audiobook' || 'book',
+      contentType: { $in: ['audiobook', 'book'] },
       isCompleted: false
     })
-    .sort({ lastListenAt: -1 })
-    .limit(limit)
-    .populate('contentId', 'bookCover bookName categoryName synopsis');
-    
+      .sort({ lastListenAt: -1 })
+      .limit(limit)
+      .populate('contentId', 'bookCover bookName categoryName synopsis isAudioBook isEbook isBook')
+      .lean();
+
 
     return {
       continueReading,
@@ -130,17 +132,17 @@ class UserProgressService {
     page = Math.max(1, parseInt(page) || 1);
     limit = Math.max(1, parseInt(limit) || 20);
     const skip = (page - 1) * limit;
-    
+
     const history = await UserProgress.find({
       userId,
       contentType
     })
-    .sort({ 
-      [contentType === 'audiobook' ? 'lastListenAt' : 'lastReadAt']: -1 
-    })
-    .skip(skip)
-    .limit(limit)
-    .populate('contentId', 'title subtitle coverImage author');
+      .sort({
+        [contentType === 'audiobook' ? 'lastListenAt' : 'lastReadAt']: -1
+      })
+      .skip(skip)
+      .limit(limit)
+      .populate('contentId', 'bookName bookCover categoryName synopsis isAudioBook isEbook isBook');
 
     const total = await UserProgress.countDocuments({
       userId,
@@ -164,15 +166,15 @@ class UserProgressService {
     page = Math.max(1, parseInt(page) || 1);
     limit = Math.max(1, parseInt(limit) || 20);
     const skip = (page - 1) * limit;
-    
+
     const bookmarks = await UserProgress.find({
       userId,
       bookmarked: true
     })
-    .sort({ updatedAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .populate('contentId', 'title subtitle coverImage author');
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('contentId', 'bookName bookCover categoryName synopsis isAudioBook isEbook isBook');
 
     const total = await UserProgress.countDocuments({
       userId,
@@ -296,7 +298,7 @@ class UserProgressService {
 
     // Merge daily data for charts
     const dailyMap = new Map();
-    
+
     readingStats.forEach(stat => {
       dailyMap.set(stat._id, {
         date: stat._id,
@@ -325,7 +327,7 @@ class UserProgressService {
       dailyMap.set(stat._id, existing);
     });
 
-    const dailyBreakdown = Array.from(dailyMap.values()).sort((a, b) => 
+    const dailyBreakdown = Array.from(dailyMap.values()).sort((a, b) =>
       a.date.localeCompare(b.date)
     );
 
@@ -348,9 +350,9 @@ class UserProgressService {
   };
 
   // Toggle bookmark status
-  static toggleBookmark = async (userId, contentId ) => {
+  static toggleBookmark = async (userId, contentId) => {
     const book = await Ebook.findOne(contentId) || await AudioBook.findOne(contentId) || await Book.findOne(contentId);
-    
+
     const progress = await UserProgress.findOne({
       userId,
       contentId,

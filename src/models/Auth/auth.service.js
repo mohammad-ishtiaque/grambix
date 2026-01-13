@@ -127,36 +127,36 @@ class AuthService {
   /**
    * Forgot Password: Send reset code
    */
-async forgotPassword(email) {
-  email = email.toLowerCase().trim();
+  async forgotPassword(email) {
+    email = email.toLowerCase().trim();
 
-  const user = await User.findOne({ email });
-  console.log(user);
-  if (user) {
+    const user = await User.findOne({ email });
+    // console.log(user);
+    if (user) {
+      const resetCode = tokenService.generateVerificationCode();
+      user.passwordResetCode = {
+        code: resetCode,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      };
+      await user.save();
+      await emailService.sendPasswordResetCode(email, resetCode);
+      return { message: "Password reset code sent to email." };
+    }
+
+    const admin = await Admin.findOne({ email });
+
+    // console.log(admin);
+    if (!admin) {
+      throw new ApiError("No user or admin found with this email", 404);
+    }
+
     const resetCode = tokenService.generateVerificationCode();
-    user.passwordResetCode = {
-      code: resetCode,
-      expiresAt: Date.now() + 10 * 60 * 1000,
-    };
-    await user.save();
+    admin.passwordResetCode = resetCode;
+    await admin.save();
     await emailService.sendPasswordResetCode(email, resetCode);
+
     return { message: "Password reset code sent to email." };
   }
-
-  const admin = await Admin.findOne({ email });
-
-  console.log(admin);
-  if (!admin) {
-    throw new ApiError("No user or admin found with this email", 404);
-  }
-
-  const resetCode = tokenService.generateVerificationCode();
-  admin.passwordResetCode = resetCode;
-  await admin.save();
-  await emailService.sendPasswordResetCode(email, resetCode);
-
-  return { message: "Password reset code sent to email." };
-}
 
 
   /**
@@ -190,7 +190,7 @@ async forgotPassword(email) {
     }
 
     admin.password = await bcrypt.hash(newPassword, 10);
-    console.log("Resetting admin password" + admin.password);
+    // console.log("Resetting admin password" + admin.password);
     admin.passwordResetCode = null;
     await admin.save();
 
@@ -253,7 +253,7 @@ async forgotPassword(email) {
   /**
    * Register an admin (only Super Admin can do this)
    */
-  
+
   async registerAdmin(adminData, creatorUser) {
     if (creatorUser.role !== "SUPER_ADMIN") {
       throw new ApiError("Only Super Admins can create admins", 403);
@@ -341,7 +341,7 @@ async forgotPassword(email) {
     let decoded;
     try {
       decoded = tokenService.verifyRefreshToken(refreshToken);
-      console.log(decoded)
+      // console.log(decoded)
     } catch (error) {
       await RefreshToken.findByIdAndDelete(storedToken._id);
       throw new ApiError('Invalid refresh token', 401);

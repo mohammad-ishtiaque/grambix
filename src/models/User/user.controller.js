@@ -3,7 +3,7 @@ const userService = require("./user.service");
 const Book = require("../Book/Book");
 const Ebook = require("../Ebook/Ebook");
 const AudioBook = require("../AudioBook/AudioBook");
-const {ApiError} = require("../../errors/errorHandler");
+const { ApiError } = require("../../errors/errorHandler");
 
 exports.getUserProfile = asyncHandler(async (req, res) => {
   const user = await userService.getUserById(req.user._id || req.user.id);
@@ -15,10 +15,10 @@ exports.updateUserProfile = asyncHandler(async (req, res) => {
     firstName: req.body?.firstName,
     lastName: req.body?.lastName,
     phone: req.body?.phone,
-    profilePicture: req.file?.location , // will store file path if uploaded
+    profilePicture: req.file?.location, // will store file path if uploaded
   };
 
-  console.log(updatePayload);
+  // console.log(updatePayload);
   const updatedUser = await userService.updateUserProfile(
     req.user._id || req.user.id,
     updatePayload
@@ -47,12 +47,12 @@ exports.toggleSaveBook = asyncHandler(async (req, res) => {
 
   let contentType = 'Book';
   let content = await Book.findById(id);
-  
+
   if (!content) {
     content = await Ebook.findById(id);
     contentType = 'Ebook';
   }
-  
+
   if (!content) {
     content = await AudioBook.findById(id);
     contentType = 'AudioBook';
@@ -61,13 +61,13 @@ exports.toggleSaveBook = asyncHandler(async (req, res) => {
   if (!content) throw new ApiError("Content not found", 404);
 
   const updatedUser = await userService.toggleSaveBook(
-    req.user._id || req.user.id, 
-    id, 
+    req.user._id || req.user.id,
+    id,
     contentType
   );
 
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: `Book ${updatedUser.savedItems.some(item => item.contentId.toString() === id) ? 'saved' : 'unsaved'} successfully`,
     data: updatedUser.savedItems
   });
@@ -80,8 +80,8 @@ exports.allSavedItems = asyncHandler(async (req, res) => {
 
 exports.clearUserInformation = asyncHandler(async (req, res) => {
   const user = await userService.clearUserInformation(req.user._id || req.user.id);
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: "User information cleared successfully",
     data: user
   });

@@ -61,7 +61,7 @@ const getPrivacyPolicy = asyncHandler(async (req, res) => {
 
 const getPrivacyPolicy1 = asyncHandler(async (req, res) => {
   const result = await ManageService.getPrivacyPolicy();
-  console.log(result)
+  // console.log(result)
   res.status(200).send(result.description);
 });
 

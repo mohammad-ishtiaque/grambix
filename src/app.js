@@ -80,13 +80,13 @@ const allowedOrigins = [
 app.use(helmet());  
 app.use(cors({
   origin: function (origin, callback) {
-    console.log("Incoming origin:", origin);
+    // console.log("Incoming origin:", origin);
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
-      console.log("Allowed:", origin);
+      // console.log("Allowed:", origin);
       return callback(null, true);
     }
-    console.log("Blocked:", origin);
+    // console.log("Blocked:", origin);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true

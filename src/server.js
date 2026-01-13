@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST_URL || "0.0.0.0";
 
 server.listen(PORT, HOST,  () => {
-    console.log(`Grambix Server is running on ${HOST}:${PORT}`);
+    console.log(`Grambix Server is running on http://${HOST}:${PORT}`);
   });
   
 

@@ -19,15 +19,15 @@ exports.updateUserProfile = async (userId, updateData) => {
   if (typeof updateData.lastName !== "undefined") user.lastName = updateData.lastName;
   if (typeof updateData.phone !== "undefined") user.phone = updateData.phone;
   if (typeof updateData.profilePicture !== "undefined") user.profilePicture = updateData.profilePicture;
-   
+
   await user.save();
   return user;
 };
 
 exports.changeUserPassword = async (userId, currentPassword, newPassword, confirmPassword) => {
   const user = await User.findById(userId).select("+password");
-//   console.log(user);
- 
+  //   console.log(user);
+
   if (!user) throw new ApiError("User not found", 404);
 
   const isMatch = await bcrypt.compare(currentPassword, user.password);
@@ -52,68 +52,69 @@ exports.toggleSaveBook = async (userId, bookId, contentType) => {
   );
 
   let updatedUser;
-  
+
   if (existingIndex !== -1) {
     // already saved → remove it using $pull
-    console.log("Removing item from savedItems");
+    //console.log("Removing item from savedItems");
     updatedUser = await User.findByIdAndUpdate(
       userId,
-      { 
-        $pull: { 
-          savedItems: { 
-            contentId: bookId, 
-            contentType: contentType 
-          } 
-        } 
+      {
+        $pull: {
+          savedItems: {
+            contentId: bookId,
+            contentType: contentType
+          }
+        }
       },
       { new: true, select: "-password -verificationCode -isVerified -passwordResetCode" }
     );
   } else {
     // not saved → add it using $push
-    console.log("Adding item to savedItems");
+    //console.log("Adding item to savedItems");
     updatedUser = await User.findByIdAndUpdate(
       userId,
-      { 
-        $push: { 
-          savedItems: { 
-            contentId: bookId, 
-            contentType: contentType 
-          } 
-        } 
+      {
+        $push: {
+          savedItems: {
+            contentId: bookId,
+            contentType: contentType
+          }
+        }
       },
       { new: true, select: "-password -verificationCode -isVerified -passwordResetCode" }
     );
   }
 
-  console.log("Updated savedItems:", updatedUser.savedItems);
-  
+  //console.log("Updated savedItems:", updatedUser.savedItems);
+
   // Verify by fetching fresh from DB
   const verification = await User.findById(userId).select("savedItems");
-  console.log("Verification from DB:", verification.savedItems);
-  
+ // console.log("Verification from DB:", verification.savedItems);
+
   return updatedUser;
 };
 
 
 exports.allSavedItems = async (userId) => {
-  const user = await User.findById(userId).select("-password").select("-verificationCode").select("-isVerified").select("-passwordResetCode");
+  const user = await User.findById(userId)
+    .select("-password -verificationCode -isVerified -passwordResetCode")
+    .populate({
+      path: 'savedItems.contentId',
+      select: 'bookName bookCover categoryName synopsis isAudioBook isEbook isBook'
+    });
+
   if (!user) throw new ApiError("User not found", 404);
-  
-  console.log("User ID:", userId);
-  console.log("Full user object keys:", Object.keys(user.toObject()));
-  console.log("Saved items length:", user.savedItems?.length);
-  console.log("Saved items:", JSON.stringify(user.savedItems, null, 2));
-  
+
   return user.savedItems;
 };
 
 exports.deleteUserAccount = async (userId) => {
   const user = await User.findByIdAndDelete(userId);
   if (!user) throw new ApiError("User not found", 404);
-  
+
   // Here you can add any cleanup logic needed when a user deletes their account
   // For example, removing user's data from other collections
-  
+
   return { success: true, message: "Account deleted successfully" };
 };
 
@@ -134,7 +135,7 @@ exports.clearUserInformation = async (userId) => {
   user.isBlocked = false;
 
   await user.save();
-  
+
   // Return the updated user without sensitive data
   const { password, ...userWithoutPassword } = user.toObject();
   return userWithoutPassword;

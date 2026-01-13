@@ -6,7 +6,7 @@ const unlink = util.promisify(fs.unlink);
 const deleteFile = async (filePath) => {
   try {
     if (!filePath || !fs.existsSync(filePath)) {
-      console.log('No file path provided or file does not exist:', filePath);
+      // console.log('No file path provided or file does not exist:', filePath);
       return;
     }
 
@@ -19,7 +19,7 @@ const deleteFile = async (filePath) => {
 
     await unlink(filePath);
   } catch (error) {
-    console.error('Error deleting file:', error);
+    // console.error('Error deleting file:', error);
     throw error;
   }
 };

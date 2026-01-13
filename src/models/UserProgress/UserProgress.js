@@ -10,7 +10,13 @@ const userProgressSchema = new mongoose.Schema({
   contentId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
+    refPath: 'contentModel',
     index: true
+  },
+  contentModel: {
+    type: String,
+    required: true,
+    enum: ['Ebook', 'AudioBook', 'Book']
   },
   contentType: {
     type: String,

@@ -176,9 +176,9 @@ const getSavedBooks = asyncHandler(async (req, res) => {
     const books = await Book.find({ isSaved: true }).lean();
     const audioBooks = await AudioBook.find({ isSaved: true }).lean();
     const ebooks = await Ebook.find({ isSaved: true }).lean();
-    console.log(books);
-    console.log(audioBooks);
-    console.log(ebooks);
+    // console.log(books);
+    // console.log(audioBooks);
+    // console.log(ebooks);
 
     const allBooks = [
         ...books,

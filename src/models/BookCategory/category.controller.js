@@ -9,7 +9,7 @@ const asyncHandler = require('../../utils/asyncHandler');
 const getCategoriesWithCounts = asyncHandler(async (req, res) => {
     // Get all categories
     const categories = await BookCategory.find().lean();
-    
+
     // Get counts for each category in parallel
     const categoriesWithCounts = await Promise.all(
         categories.map(async (category) => {
@@ -17,7 +17,7 @@ const getCategoriesWithCounts = asyncHandler(async (req, res) => {
                 AudioBook.countDocuments({ category: category._id }),
                 Ebook.countDocuments({ category: category._id })
             ]);
-            
+
             return {
                 ...category,
                 totalBooks: audioBookCount + ebookCount,
@@ -38,7 +38,7 @@ const getCategoriesWithCounts = asyncHandler(async (req, res) => {
 const getBooksByCategory = asyncHandler(async (req, res) => {
     const { type = 'all', page = 1, limit = 10, categoryId } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    console.log(req.query);
+    //console.log(req.query);
     // Check if category exists
     const category = await BookCategory.findById(categoryId);
     if (!category) {
@@ -50,10 +50,10 @@ const getBooksByCategory = asyncHandler(async (req, res) => {
 
     // Common query for both types
     const baseQuery = { category: categoryId };
-    
+
     // Select fields
     const selectFields = 'bookCover bookName synopsis';
-    
+
     // Get books based on type
     let audioBooks = [];
     let ebooks = [];

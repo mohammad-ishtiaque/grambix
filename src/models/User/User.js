@@ -5,12 +5,12 @@ const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
-      required: [true, "First name is required"],
+      // required: [true, "First name is required"],
       trim: true,
     },
     lastName: {
       type: String,
-      required: [true, "Last name is required"],
+      // required: [true, "Last name is required"],
       trim: true,
     },
     email: {
@@ -53,8 +53,16 @@ const userSchema = new mongoose.Schema(
     },
     savedItems: [
       {
-        contentId: { type: mongoose.Schema.Types.ObjectId, required: true },
-        contentType: { type: String, enum: ["Book", "Ebook", "AudioBook"], required: true }
+        contentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+          refPath: 'savedItems.contentType'
+        },
+        contentType: {
+          type: String,
+          enum: ["Book", "Ebook", "AudioBook"],
+          required: true
+        }
       }
     ],
     verificationCode: {
