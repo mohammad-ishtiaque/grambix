@@ -21,6 +21,7 @@ const audioBookSchema = new mongoose.Schema({
     },
     categoryName: {
         type: String,
+        required: true
     },
     audioFile: {
         type: String, // store file path or URL
@@ -44,6 +45,10 @@ const audioBookSchema = new mongoose.Schema({
     isBook: {
         type: Boolean,
         default: false
+    },
+    viewCount: {
+        type: Number,
+        default: 0
     },
     duration: {
         type: Number, // in seconds

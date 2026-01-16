@@ -52,6 +52,32 @@ exports.getAllBooks = async (query) => {
   };
 };
 
+/** Get Books by Category ID with Pagination */
+exports.getBooksByCategoryId = async (categoryId, query) => {
+  const { page = 1, limit = 10 } = query;
+  const skip = (page - 1) * limit;
+
+  const filter = { category: categoryId };
+
+  const books = await Book.find(filter)
+    .populate("createdBy", "name email")
+    .populate("category", "name")
+    .skip(skip)
+    .limit(parseInt(limit))
+    .sort({ createdAt: -1 });
+
+  const total = await Book.countDocuments(filter);
+
+  return {
+    books,
+    pagination: {
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / limit),
+    },
+  };
+};
+
 /** Get Book by ID */
 exports.getBookById = async (id) => {
   const book = await Book.findById(id)
@@ -98,4 +124,9 @@ exports.deleteBook = async (id, user) => {
 
   await book.deleteOne();
   return true;
+};
+
+/** Increment View Count */
+exports.incrementViewCount = async (id) => {
+  await Book.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
 };

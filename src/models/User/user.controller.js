@@ -15,7 +15,7 @@ exports.updateUserProfile = asyncHandler(async (req, res) => {
     firstName: req.body?.firstName,
     lastName: req.body?.lastName,
     phone: req.body?.phone,
-    profilePicture: req.file?.location, // will store file path if uploaded
+    profilePicture: req.body?.profilePicture || req.file?.location, // will store file path if uploaded
   };
 
   // console.log(updatePayload);

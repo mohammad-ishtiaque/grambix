@@ -1,8 +1,9 @@
 const Ebook = require("./Ebook");
-const {ApiError} = require("../../errors/errorHandler");
+const { ApiError } = require("../../errors/errorHandler");
 const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
+const Book = require('../Book/Book');
 
 /** Delete file helper */
 const deleteFile = (filePath) => {
@@ -27,31 +28,47 @@ exports.createEbook = async (data, user) => {
 /**
  * Get all ebooks with search & pagination
  */
+
+
 exports.getAllEbooks = async (query) => {
   const { search, categoryName, page = 1, limit = 10 } = query;
-  const filter = {};
+  const limitParsed = parseInt(limit);
+  const pageParsed = parseInt(page);
 
+  const filter = {};
   if (search) filter.bookName = { $regex: search, $options: "i" };
   if (categoryName) filter.categoryName = { $regex: `^${categoryName}$`, $options: "i" };
 
-  const skip = (page - 1) * limit;
+  const bookFilter = { ...filter, isEbook: true };
 
-  const ebooks = await Ebook.find(filter)
-    .populate("createdBy", "name email")
-    .populate("category", "name")
-    .skip(skip)
-    .limit(parseInt(limit))
-    .sort({ createdAt: -1 });
+  const [ebooks, books] = await Promise.all([
+    Ebook.find(filter)
+      .populate("createdBy", "name email")
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+      .lean(),
+    Book.find(bookFilter)
+      .populate("createdBy", "name email") // Book also references 'createdBy' as Admin usually
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+      .lean()
+  ]);
 
-  if (ebooks.length === 0) return { ebooks: [], pagination: { total: 0, page: parseInt(page), pages: 0 } };
-  const total = await Ebook.countDocuments(filter);
+  let allItems = [...ebooks, ...books];
+
+  // Sort combined results by createdAt desc
+  allItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = allItems.length;
+  const skip = (pageParsed - 1) * limitParsed;
+  const paginatedItems = allItems.slice(skip, skip + limitParsed);
 
   return {
-    ebooks,
+    ebooks: paginatedItems,
     pagination: {
       total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit),
+      page: pageParsed,
+      pages: Math.ceil(total / limitParsed),
     },
   };
 };
@@ -106,4 +123,9 @@ exports.deleteEbook = async (id, user) => {
 
   await ebook.deleteOne();
   return true;
+};
+
+/** Increment View Count */
+exports.incrementViewCount = async (id) => {
+  await Ebook.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
 };

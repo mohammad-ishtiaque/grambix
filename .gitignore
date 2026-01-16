@@ -76,3 +76,4 @@ Desktop.ini
 docker-compose.override.yml
 docker-compose.override.yaml
 .dockerignore
+uploads/

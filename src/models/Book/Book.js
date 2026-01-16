@@ -44,6 +44,10 @@ const bookSchema = new mongoose.Schema(
             type: Boolean,
             default: true
         },
+        viewCount: {
+            type: Number,
+            default: 0
+        },
 
         // Ebook version
 
@@ -53,9 +57,9 @@ const bookSchema = new mongoose.Schema(
 
         // AudioBook version
         audioFile: { type: String },
-        duration: { 
+        duration: {
             type: Number,
-            set: (v) => require('../../utils/timeUtils').parseDurationToSeconds(v) 
+            set: (v) => require('../../utils/timeUtils').parseDurationToSeconds(v)
         }, // seconds/minutes
 
 

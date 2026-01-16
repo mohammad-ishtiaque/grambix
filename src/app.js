@@ -1,10 +1,10 @@
-const express = require( "express");
-const morgan = require( "morgan");
-const helmet = require( "helmet");
-const cors = require( "cors");
-const cookieParser = require( "cookie-parser");
+const express = require("express");
+const morgan = require("morgan");
+const helmet = require("helmet");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const errorMiddleware = require("./middleware/errorHandler");
-const authRoutes = require( "./models/Auth/auth.routes");
+const authRoutes = require("./models/Auth/auth.routes");
 const ebookRoutes = require("./models/Ebook/ebook.routes");
 const adminRoutes = require("./models/Admin/admin.routes");
 const bookCategoryRoutes = require("./models/BookCategory/bookCategory.routes");
@@ -19,6 +19,7 @@ const bookRoutes = require("./models/Book/book.routes");
 const userManagementRoutes = require("./models/UserManagement/userManagement.routes");
 const userProgressRoutes = require("./models/UserProgress/userProgress.routes");
 const userPersonalizedRoutes = require("./models/UserPersonalized/userPersonalized.routes");
+const uploadRoutes = require("./models/Upload/upload.routes");
 // const userRoutes = require( "./modules/user/user.routes.js");
 const path = require("path");
 const fs = require("fs");
@@ -33,7 +34,7 @@ app.use("/", express.static(path.join(__dirname, '..')));
 // app.get('/test-upload-file', (req, res) => {
 //   const uploadsDir = path.join(__dirname, '..',  'uploads', 'images'); // Go up one level to project root
 //   const testFile = path.join(uploadsDir, '1754711813859-1-3.jpg');
-  
+
 //   // Create uploads directory if it doesn't exist{"exists":true,"message":"File exists on server","path":"C:\\Users\\arifi\\OneDrive\\Documents\\All Projects\\petApp_backend\\uploads\\1754380067076-age1.jpg"}
 //   if (!fs.existsSync(uploadsDir)) {
 //     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -43,7 +44,7 @@ app.use("/", express.static(path.join(__dirname, '..')));
 //       path: uploadsDir
 //     });
 //   }
-  
+
 // // Check if file exists
 //   fs.access(testFile, fs.constants.F_OK, (err) => {
 //     if (err) {
@@ -63,21 +64,21 @@ app.use("/", express.static(path.join(__dirname, '..')));
 //   });
 // });
 
-const allowedOrigins = [      
+const allowedOrigins = [
   "*",   // your main frontend from .env
   "http://10.10.20.54:3500",
   "http://localhost:3500",
   "https://olavenniels.vercel.app",
-  "http://13.62.91.46:3001", 
+  "http://13.62.91.46:3001",
   "https://app.grambix.com",
-  "http://13.62.165.184:3001" ,
-  "https://dashboard.grambix.com" ,
+  "http://13.62.165.184:3001",
+  "https://dashboard.grambix.com",
   "http://localhost:3001"    // fallback localhost
 ];
 
 
 // Security Middlewares 
-app.use(helmet());  
+app.use(helmet());
 app.use(cors({
   origin: function (origin, callback) {
     // console.log("Incoming origin:", origin);
@@ -122,6 +123,7 @@ app.use("/api/books", bookRoutes);
 app.use("/api/user-management", userManagementRoutes);
 app.use("/api/user-progress", userProgressRoutes);
 app.use("/api/user-personalized", userPersonalizedRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // app.use("/api/v1/auth", authRoutes);
 // app.use("/api/v1/users", userRoutes);

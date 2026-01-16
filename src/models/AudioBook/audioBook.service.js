@@ -2,6 +2,7 @@ const AudioBook = require('./AudioBook');
 const { ApiError } = require('../../errors/errorHandler');
 const fs = require('fs');
 const path = require('path');
+const Book = require('../Book/Book');
 
 const deleteFile = (filePath) => {
   if (filePath && fs.existsSync(path.resolve(filePath))) {
@@ -21,30 +22,40 @@ exports.createAudioBook = async (data, user) => {
   return audioBook;
 };
 
+
+
 exports.getAllAudioBooks = async (query) => {
   const { limit = 10, page = 1, search, categoryName } = query;
-  const skip = (page - 1) * limit;
+  const limitParsed = parseInt(limit);
+  const pageParsed = parseInt(page);
 
   const filter = {};
-
   if (search) filter.bookName = { $regex: search, $options: "i" };
   if (categoryName) filter.categoryName = { $regex: `^${categoryName}$`, $options: "i" };
 
-  const audioBooks = await AudioBook.find(filter)
-    .skip(skip)
-    .limit(parseInt(limit))
-    .populate('category', 'name');
+  // Book specific filter
+  const bookFilter = { ...filter, isAudioBook: true, isBook: true };
 
-  if (audioBooks.length === 0) return { audioBooks: [], pagination: { total: 0, page: parseInt(page), pages: 0 } };
+  const [audioBooks, books] = await Promise.all([
+    AudioBook.find(filter).populate('category', 'name').sort({ createdAt: -1 }).lean(),
+    Book.find(bookFilter).populate('category', 'name').sort({ createdAt: -1 }).lean()
+  ]);
 
-  const total = await AudioBook.countDocuments(filter);
+  let allItems = [...audioBooks, ...books];
+
+  // Sort combined results by createdAt desc
+  allItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const total = allItems.length;
+  const skip = (pageParsed - 1) * limitParsed;
+  const paginatedItems = allItems.slice(skip, skip + limitParsed);
 
   return {
-    audioBooks,
+    audioBooks: paginatedItems,
     pagination: {
       total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit),
+      page: pageParsed,
+      pages: Math.ceil(total / limitParsed),
     },
   };
 };
@@ -57,7 +68,7 @@ exports.getAudioBookById = async (id) => {
 
 exports.updateAudioBook = async (id, data, user) => {
   if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
-  throw new ApiError('Only admins or super admins can update audiobooks', 403);  
+    throw new ApiError('Only admins or super admins can update audiobooks', 403);
   }
 
   const audioBook = await AudioBook.findById(id);
@@ -88,4 +99,8 @@ exports.deleteAudioBook = async (id, user) => {
   deleteFile(audioBook.audioFile);
 
   return audioBook;
+};
+
+exports.incrementViewCount = async (id) => {
+  await AudioBook.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
 };

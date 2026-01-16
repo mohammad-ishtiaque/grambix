@@ -7,13 +7,23 @@ exports.createAudioBook = asyncHandler(async (req, res) => {
   const { bookName, synopsis, tags, duration } = req.body;
 
   // validate category
-  const category = await BookCategory.findById(req.body.category);
-  if (!category) throw new ApiError("Category not found", 404);
-  const categoryName = category.name;
+  let categoryData;
+  if (req.body.category) {
+    categoryData = await BookCategory.findById(req.body.category);
+    if (!categoryData) {
+      throw new ApiError("Category not found", 404);
+    }
+  } else {
+    throw new ApiError("Category is required", 400);
+  }
 
-  // handle file uploads
-  const bookCoverPath = req.files?.bookCover?.[0]?.location  || undefined;
-  const audioFilePath = req.files?.audioFile?.[0]?.location  || undefined;
+  const categoryName = categoryData.name;
+  const category = categoryData._id;
+
+
+  // handle file uploads or urls
+  const bookCoverPath = req.body.bookCover || req.files?.bookCover?.[0]?.location || undefined;
+  const audioFilePath = req.body.audioFile || req.files?.audioFile?.[0]?.location || undefined;
 
   // handle tags (convert comma-separated string → array)
   let tagsArray = [];
@@ -28,7 +38,7 @@ exports.createAudioBook = asyncHandler(async (req, res) => {
     audioFile: audioFilePath,
     bookName,
     synopsis,
-    category: category._id,
+    category,
     categoryName,
     tags: tagsArray,
     duration: duration,
@@ -50,22 +60,41 @@ exports.getAllAudioBooks = asyncHandler(async (req, res) => {
 
 exports.getAudioBookById = asyncHandler(async (req, res) => {
   const audioBook = await audioBookService.getAudioBookById(req.params.id);
+  audioBookService.incrementViewCount(req.params.id);
   res.json({ success: true, message: 'AudioBook fetched successfully', data: audioBook });
 });
 
 exports.updateAudioBook = asyncHandler(async (req, res) => {
- 
-    const audioBook = await audioBookService.updateAudioBook(
-      req.params.id, 
-      {
-        ...req.body,
-        bookCover: req.files?.bookCover?.[0]?.location  || undefined,
-        audioFile: req.files?.audioFile?.[0]?.location  || undefined,
-        tags: req.body.tags ? req.body.tags.split(",").map((tag) => tag.trim()) : [],
-      }, 
-      req.admin
-    );
-    res.json({ success: true, message: 'AudioBook updated successfully', data: audioBook });
+  const updateData = { ...req.body };
+
+  if (req.body.category) {
+    const categoryData = await BookCategory.findById(req.body.category);
+    if (!categoryData) {
+      throw new ApiError("Category not found", 404);
+    }
+    updateData.category = categoryData._id;
+    updateData.categoryName = categoryData.name;
+  }
+
+  if (req.body.tags) {
+    updateData.tags = typeof req.body.tags === "string"
+      ? req.body.tags.split(",").map((tag) => tag.trim())
+      : req.body.tags;
+  }
+
+  if (req.files?.bookCover) {
+    updateData.bookCover = req.files.bookCover[0].location;
+  }
+  if (req.files?.audioFile) {
+    updateData.audioFile = req.files.audioFile[0].location;
+  }
+
+  const audioBook = await audioBookService.updateAudioBook(
+    req.params.id,
+    updateData,
+    req.admin
+  );
+  res.json({ success: true, message: 'AudioBook updated successfully', data: audioBook });
 });
 
 exports.deleteAudioBook = asyncHandler(async (req, res) => {

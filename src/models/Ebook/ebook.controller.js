@@ -5,8 +5,20 @@ const BookCategory = require("../BookCategory/BookCategory");
 /** Create Ebook */
 exports.createEbook = asyncHandler(async (req, res) => {
   const { bookName, synopsis, totalPages, tags } = req.body;
-  const category = await BookCategory.findById(req.body.category);
-  const categoryName = category?.name;
+
+  // validate category
+  let categoryData;
+  if (req.body.category) {
+    categoryData = await BookCategory.findById(req.body.category);
+    if (!categoryData) {
+      throw new ApiError("Category not found", 404);
+    }
+  } else {
+    throw new ApiError("Category is required", 400);
+  }
+
+  const categoryName = categoryData.name;
+  const category = categoryData._id;
 
 
   let tagsArray = [];
@@ -23,8 +35,8 @@ exports.createEbook = asyncHandler(async (req, res) => {
       category,
       categoryName,
       totalPages,
-      bookCover: req.files?.bookCover?.[0]?.location  || null,
-      pdfFile: req.files?.pdfFile?.[0]?.location  || null,
+      bookCover: req.body.bookCover || req.files?.bookCover?.[0]?.location || null,
+      pdfFile: req.body.pdfFile || req.files?.pdfFile?.[0]?.location || null,
       tags: tagsArray,
     },
     req.admin
@@ -44,19 +56,39 @@ exports.getAllEbooks = asyncHandler(async (req, res) => {
 /** Get single ebook */
 exports.getEbookById = asyncHandler(async (req, res) => {
   const ebook = await EbookService.getEbookById(req.params.id);
+  EbookService.incrementViewCount(req.params.id);
   res.status(200).json({ success: true, data: ebook });
 });
 
 /** Update ebook */
 exports.updateEbook = asyncHandler(async (req, res) => {
+  const updateData = { ...req.body };
+
+  if (req.body.category) {
+    const categoryData = await BookCategory.findById(req.body.category);
+    if (!categoryData) {
+      throw new ApiError("Category not found", 404);
+    }
+    updateData.category = categoryData._id;
+    updateData.categoryName = categoryData.name;
+  }
+
+  if (req.body.tags) {
+    updateData.tags = typeof req.body.tags === "string"
+      ? req.body.tags.split(",").map((tag) => tag.trim())
+      : req.body.tags;
+  }
+
+  if (req.files?.bookCover) {
+    updateData.bookCover = req.files.bookCover[0].location;
+  }
+  if (req.files?.pdfFile) {
+    updateData.pdfFile = req.files.pdfFile[0].location;
+  }
+
   const ebook = await EbookService.updateEbook(
     req.params.id,
-    {
-      ...req.body,
-      bookCover: req.files?.bookCover?.[0]?.location  || undefined,
-      pdfFile: req.files?.pdfFile?.[0]?.location  || undefined,
-      tags: req.body.tags ? req.body.tags.split(",").map((tag) => tag.trim()) : [],
-    },
+    updateData,
     req.admin
   );
 

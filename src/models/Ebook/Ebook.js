@@ -32,9 +32,11 @@ const ebookSchema = new mongoose.Schema(
     category: {
       type: mongoose.Schema.Types.ObjectId, // Reference to category
       ref: "BookCategory",
+      required: true,
     },
     categoryName: {
       type: String,
+      required: true,
     },
     tags: {
       type: [String],
@@ -54,6 +56,10 @@ const ebookSchema = new mongoose.Schema(
     isBook: {
       type: Boolean,
       default: false
+    },
+    viewCount: {
+      type: Number,
+      default: 0
     },
   },
   { timestamps: true }
