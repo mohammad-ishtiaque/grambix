@@ -8,7 +8,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 // Allowed mimetypes
-const allowedImageTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+const allowedImageTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp", "image/jfif"];
 const allowedAudioTypes = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/ogg"];
 const allowedPdfTypes = ["application/pdf"];
 

@@ -57,6 +57,7 @@ const getBooksByCategory = asyncHandler(async (req, res) => {
     // Get books based on type
     let audioBooks = [];
     let ebooks = [];
+    let books = [];
     let totalAudioBooks = 0;
     let totalEbooks = 0;
 
@@ -69,6 +70,7 @@ const getBooksByCategory = asyncHandler(async (req, res) => {
                 .lean(),
             AudioBook.countDocuments(baseQuery)
         ]);
+        books = [...audioBooks];
     }
 
     if (type === 'all' || type === 'ebook') {
@@ -80,6 +82,7 @@ const getBooksByCategory = asyncHandler(async (req, res) => {
                 .lean(),
             Ebook.countDocuments(baseQuery)
         ]);
+        books = [...ebooks];
     }
 
     const totalBooks = totalAudioBooks + totalEbooks;
@@ -93,7 +96,7 @@ const getBooksByCategory = asyncHandler(async (req, res) => {
                 name: category.name,
                 image: category.image
             },
-            books: [...audioBooks, ...ebooks],
+            books,
             pagination: {
                 total: totalBooks,
                 totalAudioBooks,
