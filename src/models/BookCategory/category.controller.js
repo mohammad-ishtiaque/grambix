@@ -1,6 +1,7 @@
 const BookCategory = require('./BookCategory');
 const AudioBook = require('../AudioBook/AudioBook');
 const Ebook = require('../Ebook/Ebook');
+const Book = require('../Book/Book');
 const asyncHandler = require('../../utils/asyncHandler');
 
 // @desc    Get all categories with book counts
@@ -36,9 +37,8 @@ const getCategoriesWithCounts = asyncHandler(async (req, res) => {
 // @route   GET /api/categories/books/:categoryId
 // @access  Public
 const getBooksByCategory = asyncHandler(async (req, res) => {
-    const { type = 'all', page = 1, limit = 10, categoryId } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    //console.log(req.query);
+    const { type = 'all', page, limit, categoryId } = req.query;
+
     // Check if category exists
     const category = await BookCategory.findById(categoryId);
     if (!category) {
@@ -57,36 +57,87 @@ const getBooksByCategory = asyncHandler(async (req, res) => {
     // Get books based on type
     let audioBooks = [];
     let ebooks = [];
-    let books = [];
+    let genericBooks = [];
+
     let totalAudioBooks = 0;
     let totalEbooks = 0;
+    let totalGenericBooks = 0;
 
-    if (type === 'all' || type === 'audio') {
-        [audioBooks, totalAudioBooks] = await Promise.all([
-            AudioBook.find(baseQuery)
-                .select(selectFields)
-                .skip(skip)
-                .limit(limit)
-                .lean(),
+    const promises = [];
+
+    // AudioBooks
+    if (type === 'all' || type === 'audio' || type === 'book') {
+        const p = Promise.all([
+            AudioBook.find(baseQuery).select(selectFields).sort({ createdAt: -1 }).lean(),
             AudioBook.countDocuments(baseQuery)
-        ]);
-        books = [...audioBooks];
+        ]).then(([docs, count]) => {
+            audioBooks = docs;
+            totalAudioBooks = count;
+        });
+        promises.push(p);
     }
 
-    if (type === 'all' || type === 'ebook') {
-        [ebooks, totalEbooks] = await Promise.all([
-            Ebook.find(baseQuery)
-                .select(selectFields)
-                .skip(skip)
-                .limit(limit)
-                .lean(),
+    // Ebooks
+    if (type === 'all' || type === 'ebook' || type === 'book') {
+        const p = Promise.all([
+            Ebook.find(baseQuery).select(selectFields).sort({ createdAt: -1 }).lean(),
             Ebook.countDocuments(baseQuery)
-        ]);
-        books = [...ebooks];
+        ]).then(([docs, count]) => {
+            ebooks = docs;
+            totalEbooks = count;
+        });
+        promises.push(p);
     }
 
-    const totalBooks = totalAudioBooks + totalEbooks;
-    const totalPages = Math.ceil(totalBooks / limit);
+    // Generic Books (Book Model)
+    if (type === 'all' || type === 'book') {
+        const p = Promise.all([
+            Book.find(baseQuery).select(selectFields).sort({ createdAt: -1 }).lean(),
+            Book.countDocuments(baseQuery)
+        ]).then(([docs, count]) => {
+            genericBooks = docs;
+            totalGenericBooks = count;
+        });
+        promises.push(p);
+    }
+
+    await Promise.all(promises);
+
+    let allBooks = [...audioBooks, ...ebooks, ...genericBooks];
+
+    // Sort combined results by createdAt desc (if available) or insertion order
+    allBooks.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA;
+    });
+
+    const totalBooks = allBooks.length;
+    let paginatedBooks = allBooks;
+    let paginationInfo = {
+        total: totalBooks,
+        totalAudioBooks,
+        totalEbooks,
+        totalGenericBooks
+    };
+
+    if (page && limit) {
+        const p = parseInt(page);
+        const l = parseInt(limit);
+        const skip = (p - 1) * l;
+        const totalPages = Math.ceil(totalBooks / l);
+
+        paginatedBooks = allBooks.slice(skip, skip + l);
+
+        paginationInfo = {
+            ...paginationInfo,
+            page: p,
+            limit: l,
+            totalPages,
+            hasNextPage: p < totalPages,
+            hasPreviousPage: p > 1
+        };
+    }
 
     res.json({
         success: true,
@@ -96,16 +147,8 @@ const getBooksByCategory = asyncHandler(async (req, res) => {
                 name: category.name,
                 image: category.image
             },
-            books,
-            pagination: {
-                total: totalBooks,
-                totalAudioBooks,
-                totalEbooks,
-                page: Number(page),
-                totalPages,
-                hasNextPage: page < totalPages,
-                hasPreviousPage: page > 1
-            }
+            books: paginatedBooks,
+            pagination: paginationInfo
         }
     });
 });
