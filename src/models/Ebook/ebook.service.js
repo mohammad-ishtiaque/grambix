@@ -31,7 +31,7 @@ exports.createEbook = async (data, user) => {
 
 
 exports.getAllEbooks = async (query) => {
-  const { search, categoryName, page, limit } = query;
+  const { search, categoryName, page = 1, limit = 1000 } = query;
 
   const filter = {};
   if (search) filter.bookName = { $regex: search, $options: "i" };

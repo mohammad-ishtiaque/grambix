@@ -25,7 +25,7 @@ exports.createAudioBook = async (data, user) => {
 
 
 exports.getAllAudioBooks = async (query) => {
-  const { limit, page, search, categoryName } = query;
+  const { limit= 1000, page= 1, search, categoryName } = query;
 
   const filter = {};
   if (search) filter.bookName = { $regex: search, $options: "i" };
