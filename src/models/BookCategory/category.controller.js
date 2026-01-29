@@ -37,7 +37,7 @@ const getCategoriesWithCounts = asyncHandler(async (req, res) => {
 // @route   GET /api/categories/books/:categoryId
 // @access  Public
 const getBooksByCategory = asyncHandler(async (req, res) => {
-    const { type = 'all', page, limit, categoryId } = req.query;
+    const { type = 'all', page = 1, limit = 1000, categoryId } = req.query;
 
     // Check if category exists
     const category = await BookCategory.findById(categoryId);
@@ -114,30 +114,28 @@ const getBooksByCategory = asyncHandler(async (req, res) => {
 
     const totalBooks = allBooks.length;
     let paginatedBooks = allBooks;
-    let paginationInfo = {
+    let pageParsed = 1;
+    let limitParsed = totalBooks > 0 ? totalBooks : 1;
+    let totalPages = 1;
+
+    if (page && limit) {
+        pageParsed = parseInt(page);
+        limitParsed = parseInt(limit);
+        const skip = (pageParsed - 1) * limitParsed;
+        totalPages = Math.ceil(totalBooks / limitParsed);
+
+        paginatedBooks = allBooks.slice(skip, skip + limitParsed);
+    }
+
+    const paginationInfo = {
         total: totalBooks,
         totalAudioBooks,
         totalEbooks,
-        totalGenericBooks
+        page: pageParsed,
+        totalPages,
+        hasNextPage: pageParsed < totalPages,
+        hasPreviousPage: pageParsed > 1
     };
-
-    if (page && limit) {
-        const p = parseInt(page);
-        const l = parseInt(limit);
-        const skip = (p - 1) * l;
-        const totalPages = Math.ceil(totalBooks / l);
-
-        paginatedBooks = allBooks.slice(skip, skip + l);
-
-        paginationInfo = {
-            ...paginationInfo,
-            page: p,
-            limit: l,
-            totalPages,
-            hasNextPage: p < totalPages,
-            hasPreviousPage: p > 1
-        };
-    }
 
     res.json({
         success: true,
