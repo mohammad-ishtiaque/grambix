@@ -25,56 +25,74 @@ exports.createBook = async (data, user) => {
 
 /** Get All Books (search + filter + pagination) */
 exports.getAllBooks = async (query) => {
-  const { search, categoryName, page = 1, limit = 10 } = query;
+  const { search, categoryName, page, limit } = query;
   const filter = {};
 
   if (search) filter.bookName = { $regex: search, $options: "i" };
   if (categoryName) filter.categoryName = { $regex: `^${categoryName}$`, $options: "i" };
 
-  const skip = (page - 1) * limit;
-
-  const books = await Book.find(filter)
+  let booksQuery = Book.find(filter)
     .populate("createdBy", "name email")
     .populate("category", "name")
-    .skip(skip)
-    .limit(parseInt(limit))
     .sort({ createdAt: -1 });
 
   const total = await Book.countDocuments(filter);
 
+  if (page && limit) {
+    const skip = (page - 1) * limit;
+    booksQuery = booksQuery.skip(skip).limit(parseInt(limit));
+
+    const books = await booksQuery;
+
+    return {
+      books,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  const books = await booksQuery;
   return {
     books,
-    pagination: {
-      total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit),
-    },
+    total,
   };
 };
 
 /** Get Books by Category ID with Pagination */
 exports.getBooksByCategoryId = async (categoryId, query) => {
-  const { page = 1, limit = 10 } = query;
-  const skip = (page - 1) * limit;
-
+  const { page, limit } = query;
   const filter = { category: categoryId };
 
-  const books = await Book.find(filter)
+  let booksQuery = Book.find(filter)
     .populate("createdBy", "name email")
     .populate("category", "name")
-    .skip(skip)
-    .limit(parseInt(limit))
     .sort({ createdAt: -1 });
 
   const total = await Book.countDocuments(filter);
 
+  if (page && limit) {
+    const skip = (page - 1) * limit;
+    booksQuery = booksQuery.skip(skip).limit(parseInt(limit));
+
+    const books = await booksQuery;
+
+    return {
+      books,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  const books = await booksQuery;
   return {
     books,
-    pagination: {
-      total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit),
-    },
+    total,
   };
 };
 

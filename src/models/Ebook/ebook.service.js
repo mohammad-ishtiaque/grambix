@@ -31,9 +31,7 @@ exports.createEbook = async (data, user) => {
 
 
 exports.getAllEbooks = async (query) => {
-  const { search, categoryName, page = 1, limit = 10 } = query;
-  const limitParsed = parseInt(limit);
-  const pageParsed = parseInt(page);
+  const { search, categoryName, page, limit } = query;
 
   const filter = {};
   if (search) filter.bookName = { $regex: search, $options: "i" };
@@ -60,16 +58,26 @@ exports.getAllEbooks = async (query) => {
   allItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const total = allItems.length;
-  const skip = (pageParsed - 1) * limitParsed;
-  const paginatedItems = allItems.slice(skip, skip + limitParsed);
+
+  if (page && limit) {
+    const limitParsed = parseInt(limit);
+    const pageParsed = parseInt(page);
+    const skip = (pageParsed - 1) * limitParsed;
+    const paginatedItems = allItems.slice(skip, skip + limitParsed);
+
+    return {
+      ebooks: paginatedItems,
+      pagination: {
+        total,
+        page: pageParsed,
+        pages: Math.ceil(total / limitParsed),
+      },
+    };
+  }
 
   return {
-    ebooks: paginatedItems,
-    pagination: {
-      total,
-      page: pageParsed,
-      pages: Math.ceil(total / limitParsed),
-    },
+    ebooks: allItems,
+    total,
   };
 };
 

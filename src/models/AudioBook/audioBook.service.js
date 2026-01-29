@@ -25,9 +25,7 @@ exports.createAudioBook = async (data, user) => {
 
 
 exports.getAllAudioBooks = async (query) => {
-  const { limit = 10, page = 1, search, categoryName } = query;
-  const limitParsed = parseInt(limit);
-  const pageParsed = parseInt(page);
+  const { limit, page, search, categoryName } = query;
 
   const filter = {};
   if (search) filter.bookName = { $regex: search, $options: "i" };
@@ -47,16 +45,26 @@ exports.getAllAudioBooks = async (query) => {
   allItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const total = allItems.length;
-  const skip = (pageParsed - 1) * limitParsed;
-  const paginatedItems = allItems.slice(skip, skip + limitParsed);
+
+  if (page && limit) {
+    const limitParsed = parseInt(limit);
+    const pageParsed = parseInt(page);
+    const skip = (pageParsed - 1) * limitParsed;
+    const paginatedItems = allItems.slice(skip, skip + limitParsed);
+
+    return {
+      audioBooks: paginatedItems,
+      pagination: {
+        total,
+        page: pageParsed,
+        pages: Math.ceil(total / limitParsed),
+      },
+    };
+  }
 
   return {
-    audioBooks: paginatedItems,
-    pagination: {
-      total,
-      page: pageParsed,
-      pages: Math.ceil(total / limitParsed),
-    },
+    audioBooks: allItems,
+    total,
   };
 };
 
