@@ -71,6 +71,7 @@ exports.getAllEbooks = async (query) => {
         total,
         page: pageParsed,
         pages: Math.ceil(total / limitParsed),
+        limit: limitParsed,
       },
     };
   }

@@ -58,6 +58,7 @@ exports.getAllAudioBooks = async (query) => {
         total,
         page: pageParsed,
         pages: Math.ceil(total / limitParsed),
+        limit: limitParsed,
       },
     };
   }
@@ -65,6 +66,9 @@ exports.getAllAudioBooks = async (query) => {
   return {
     audioBooks: allItems,
     total,
+    pagination: {
+      total
+    },
   };
 };
 

@@ -50,6 +50,7 @@ exports.getAllBooks = async (query) => {
         total,
         page: parseInt(page),
         pages: Math.ceil(total / limit),
+        limit: parseInt(limit),
       },
     };
   }
